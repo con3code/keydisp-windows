@@ -88,7 +88,19 @@ public sealed class OutlinedTextBlock : FrameworkElement
     {
         if (_segments.Count == 0) return;
         var text = BuildText();
-        var origin = new Point(0, 0);
+        // FormattedText は MaxTextWidth の箱の中で整列するが、この要素の幅は
+        // 文字の実幅しかない。中央/右揃えでは箱の余白ぶん描画がずれるので、
+        // 揃えに応じて原点を左へ補正し、要素の右端/中央に一致させる
+        var boxWidth = !double.IsInfinity(MaxTextWidth) && MaxTextWidth > 0 ? MaxTextWidth : 0;
+        var originX = boxWidth > 0
+            ? Alignment switch
+            {
+                TextAlignment.Right => ActualWidth - boxWidth,
+                TextAlignment.Center => (ActualWidth - boxWidth) / 2,
+                _ => 0,
+            }
+            : 0;
+        var origin = new Point(originX, 0);
         if (OutlineBrush is not null && OutlineWidth > 0)
         {
             var geometry = text.BuildGeometry(origin);

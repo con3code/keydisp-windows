@@ -479,8 +479,10 @@ public partial class OverlayWindow : Window
         if (shouldShow)
         {
             if (!IsVisible) Show();
-            // 新しい行が入るたびに最前面を主張し直す (他の topmost に抜かれた場合の対策)
-            if (_hwnd != IntPtr.Zero)
+            // 新しい行が入るたびに最前面を主張し直す (他の topmost に抜かれた場合の対策)。
+            // 編集モード中は主張しない — 後から出た編集 HUD (同じく topmost) を
+            // 追い越して、HUD の操作を塞いでしまうため
+            if (_hwnd != IntPtr.Zero && !_settings.EditMode)
             {
                 SetWindowPos(_hwnd, HWND_TOPMOST, 0, 0, 0, 0,
                     SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
@@ -488,7 +490,17 @@ public partial class OverlayWindow : Window
         }
         else if (IsVisible)
         {
-            Hide();
+            // レイヤードウィンドウは非表示中に再描画されず、Hide 時の最後の合成画像が
+            // 残る (次の Show でそれが 1 フレーム見えてしまう)。空になった状態を
+            // 描画し終えてから隠すため、Hide は 1 フレーム遅らせる
+            Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.ContextIdle, () =>
+            {
+                var stillHidden = !_settings.EditMode &&
+                    !(_settings.OverlayVisible &&
+                      _model.Entries.Count > 0 &&
+                      !_settings.HiddenOnCurrentScreen);
+                if (stillHidden && IsVisible) Hide();
+            });
         }
     }
 
