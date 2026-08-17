@@ -13,7 +13,10 @@ macOS/CI では検証できない項目の蓄積。**上から優先順** (フ�
 - [ ] 管理者昇格アプリにフォーカス中はキーが取れない (UIPI) — 想定どおりの挙動として確認
 - [ ] UAC ダイアログ (Secure Desktop) 中に状態が壊れない (reconcile で回復)
 - [ ] トレイアイコン表示・メニュー・explorer.exe 再起動後の再登録 (TaskbarCreated)
-- [ ] RegisterHotKey が発火する / 他アプリと衝突しない既定を確認
+- [ ] RegisterHotKey が発火する / 他アプリと衝突しない既定を確認 (既定 Alt+Win+K = MOD_ALT|MOD_WIN + 0x4B)
+- [ ] 単一インスタンス Mutex (2 つ目の起動が即終了する)
+- [ ] トレイメニュー: キー表示トグル / すべてのキー入力を表示 / 設定フォルダを開く / 終了
+- [ ] IME オン状態での ToUnicodeEx (文字ラベルが化けないか) と ImmGetOpenStatus 判定の初動確認
 
 ## B. オーバーレイ (Phase 2-3)
 
