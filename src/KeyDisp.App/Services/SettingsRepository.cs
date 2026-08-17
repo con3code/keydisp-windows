@@ -23,8 +23,12 @@ public sealed class SettingsRepository : IDisposable
     private readonly AppSettings _settings;
     private readonly string _path;
     private readonly DispatcherTimer _debounce;
-    /// <summary>画面別プロファイル (Phase 4 で使用)。ロード時の内容を保存時に持ち越す。</summary>
-    private Dictionary<string, ScreenProfileDocument>? _displayProfiles;
+
+    /// <summary>画面別プロファイル。ScreenProfileStore と共有する実体。</summary>
+    public Dictionary<string, ScreenProfileDocument> DisplayProfiles { get; private set; } = new();
+
+    /// <summary>オーバーレイの現在フレーム (物理 px)。OverlayWindow が更新する。</summary>
+    public double[]? OverlayFrame { get; set; }
 
     public SettingsRepository(AppSettings settings, string? path = null)
     {
@@ -48,7 +52,8 @@ public sealed class SettingsRepository : IDisposable
             if (!File.Exists(_path)) return;
             var doc = SettingsDocument.FromJson(File.ReadAllText(_path));
             doc.Apply(_settings);
-            _displayProfiles = doc.DisplayProfiles;
+            DisplayProfiles = doc.DisplayProfiles ?? new Dictionary<string, ScreenProfileDocument>();
+            OverlayFrame = doc.OverlayFrame;
         }
         catch (Exception)
         {
@@ -65,6 +70,12 @@ public sealed class SettingsRepository : IDisposable
     private void OnSettingsChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName is string name && RuntimeOnlyProperties.Contains(name)) return;
+        RequestSave();
+    }
+
+    /// <summary>デバウンス付きで保存を予約する (フレーム・プロファイル変更時にも呼ばれる)。</summary>
+    public void RequestSave()
+    {
         _debounce.Stop();
         _debounce.Start();
     }
@@ -74,7 +85,8 @@ public sealed class SettingsRepository : IDisposable
         try
         {
             var doc = SettingsDocument.From(_settings);
-            doc.DisplayProfiles = _displayProfiles;
+            doc.DisplayProfiles = DisplayProfiles.Count > 0 ? DisplayProfiles : null;
+            doc.OverlayFrame = OverlayFrame;
             var dir = Path.GetDirectoryName(_path)!;
             Directory.CreateDirectory(dir);
             var tmp = _path + ".tmp";

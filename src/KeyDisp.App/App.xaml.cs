@@ -2,13 +2,16 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Windows;
+using System.Windows.Interop;
 using System.Windows.Threading;
 using KeyDisp.App.Interop;
 using KeyDisp.App.Overlay;
 using KeyDisp.App.Services;
+using KeyDisp.App.Windows;
 using KeyDisp.Core.Display;
 using KeyDisp.Core.Formatting;
 using KeyDisp.Core.Layout;
+using KeyDisp.Core.Screens;
 using KeyDisp.Core.Settings;
 using KeyDisp.Core.StateMachine;
 using static KeyDisp.App.Services.Localization;
@@ -31,6 +34,9 @@ public partial class App : Application
     private TrayIcon? _tray;
     private HotKeyManager? _hotKey;
     private OverlayWindow? _overlay;
+    private ScreenService _screens = null!;
+    private ScreenProfileStore? _profileStore;
+    private EditHudWindow? _editHud;
     private DispatcherTimer? _reconcileTimer;
     /// <summary>リピート合成用: 消費側から見た押下中キー (フックに autorepeat フラグが無いため)。</summary>
     private readonly HashSet<int> _consumerPressed = new();
@@ -61,7 +67,20 @@ public partial class App : Application
         _model = new KeyDisplayModel(_settings, scheduler);
         _machine = new KeyStateMachine(_model, _settings, formatter, scheduler, _probe, metrics);
 
-        _overlay = new OverlayWindow(_model, _settings, metrics, formatter);
+        _screens = new ScreenService();
+        _profileStore = new ScreenProfileStore(
+            _settings, scheduler, () => _overlay?.CurrentScreenId(), _repository.DisplayProfiles);
+        _profileStore.Changed += _repository.RequestSave;
+
+        _overlay = new OverlayWindow(
+            _model, _settings, metrics, formatter, _screens, _profileStore, _repository);
+        // 表示前にフレーム復元と WndProc フックを済ませるため、ハンドルを先に作る
+        new WindowInteropHelper(_overlay).EnsureHandle();
+
+        _settings.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(AppSettings.EditMode)) OnEditModeChanged();
+        };
 
         _messageWindow = new MessageWindow();
         _tray = new TrayIcon(_messageWindow, "KeyDisp", BuildTrayMenu);
@@ -104,10 +123,31 @@ public partial class App : Application
         }
     }
 
+    /// <summary>編集モードの出入り: HUD の表示と、カーソル画面への移動 (Mac 版と同じ順序)。</summary>
+    private void OnEditModeChanged()
+    {
+        if (_settings.EditMode)
+        {
+            // メニューを操作した画面のプロファイルが編集対象になるよう、先に移す
+            if (_settings.FollowCursorScreen) _overlay?.MoveToCursorScreen();
+            _editHud ??= new EditHudWindow(_settings, _screens);
+            _editHud.ShowOnCursorScreen();
+        }
+        else
+        {
+            _editHud?.Hide();
+        }
+    }
+
     private IReadOnlyList<TrayMenuItem> BuildTrayMenu() => new[]
     {
         new TrayMenuItem(L("キー表示", "Show Keystrokes"), _settings.OverlayVisible,
             () => _settings.OverlayVisible = !_settings.OverlayVisible),
+        new TrayMenuItem(L("表示編集モード", "Edit Display Mode"), _settings.EditMode,
+            () => _settings.EditMode = !_settings.EditMode),
+        new TrayMenuItem(L("表示位置をリセット", "Reset Position"), false,
+            () => _overlay?.ResetPosition()),
+        TrayMenuItem.Separator,
         new TrayMenuItem(L("すべてのキー入力を表示", "Show All Keystrokes"), _settings.ShowAllKeys,
             () => _settings.ShowAllKeys = !_settings.ShowAllKeys),
         TrayMenuItem.Separator,
@@ -131,6 +171,7 @@ public partial class App : Application
         _hotKey?.Dispose();
         _tray?.Dispose();
         _messageWindow?.Dispose();
+        _profileStore?.Dispose();
         _repository?.Dispose(); // 保留中の設定変更を確定保存
         _singleInstanceMutex?.ReleaseMutex();
         _singleInstanceMutex?.Dispose();

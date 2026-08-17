@@ -38,6 +38,10 @@ public sealed class KeyEntry
 
     public string Text => string.Concat(_tokens);
 
+    /// <summary>編集モードのプレビュー用サンプル行を作る (モデル管理外)。</summary>
+    public static KeyEntry Sample(IEnumerable<string> tokens, bool isTyping, int count = 1) =>
+        new(tokens, isTyping, KeyEntryPhase.Holding) { Count = count };
+
     internal void ReplaceTokens(IEnumerable<string> tokens)
     {
         _tokens.Clear();

@@ -7,6 +7,11 @@
         ResizeMode="NoResize" Width="620" Height="440">
     <!-- 行は OverlayRowControl として動的に追加される。3 スタイルの中身は RowContentFactory -->
     <Grid>
+        <!-- 編集モードの破線枠 (Mac 版: accent 80% の dash [6,4] + 黒 6% の下敷き) -->
+        <Rectangle x:Name="EditFrame" Margin="2" RadiusX="12" RadiusY="12"
+                   StrokeThickness="1.5" StrokeDashArray="6 4"
+                   Stroke="#CCFFB300" Fill="#0F000000"
+                   Visibility="Collapsed"/>
         <StackPanel x:Name="RowsPanel" Margin="16" VerticalAlignment="Bottom"/>
     </Grid>
 </Window>

@@ -78,6 +78,9 @@ public sealed class SettingsDocument
     public int? HotKeyVk { get; set; }
     public int? HotKeyModifiers { get; set; }
 
+    /// <summary>オーバーレイの現在フレーム [x, y, width, height] (物理 px)。</summary>
+    public double[]? OverlayFrame { get; set; }
+
     /// <summary>画面 ID (安定 ID) → プロファイル。</summary>
     public Dictionary<string, ScreenProfileDocument>? DisplayProfiles { get; set; }
 
