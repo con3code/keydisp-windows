@@ -407,6 +407,34 @@ public class KeyStateMachineTests
     }
 
     [Fact]
+    public void Reconcile_AdoptsModifierDownMissedByHook()
+    {
+        // フックに修飾キーの down が届かなかった (VM のキーボード仮想化など) 場合でも、
+        // reconcile が実状態から拾い直して修飾キー単独行を出す
+        _h.Probe.PhysicallyDown.Add(Vk.LControl); // イベントなしで物理的に押されている
+        _h.Machine.ReconcileHeldState();
+        Assert.Equal("Ctrl", _h.SingleEntry().Text);
+        Assert.Equal(KeyEntryPhase.Active, _h.SingleEntry().Phase);
+
+        // 離されたら次の reconcile で解放される
+        _h.Probe.PhysicallyDown.Remove(Vk.LControl);
+        _h.Machine.ReconcileHeldState();
+        Assert.Equal(KeyEntryPhase.Holding, _h.SingleEntry().Phase);
+    }
+
+    [Fact]
+    public void Reconcile_AdoptedModifier_StillFormsComboWithNextKey()
+    {
+        _h.Probe.PhysicallyDown.Add(Vk.LControl);
+        _h.Machine.ReconcileHeldState(); // "Ctrl" 行が出る
+        _h.Down(C); // フック経由で C が届く → コンボへ
+        Assert.Equal("CtrlC", _h.SingleEntry().Text);
+        _h.Up(C);
+        _h.Probe.PhysicallyDown.Remove(Vk.LControl);
+        _h.Machine.ReconcileHeldState();
+    }
+
+    [Fact]
     public void HiddenOverlay_ProcessesNoInput()
     {
         _h.Settings.OverlayVisible = false;

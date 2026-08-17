@@ -5,23 +5,8 @@
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         ShowInTaskbar="False" Topmost="True" ShowActivated="False"
         ResizeMode="NoResize" Width="620" Height="440">
-    <!-- MVP: シンプルスタイルのみ。キーキャップ / カスタム画像 / アニメーションは Phase 3 -->
-    <ItemsControl x:Name="Rows" Margin="16" VerticalAlignment="Bottom">
-        <ItemsControl.ItemTemplate>
-            <DataTemplate>
-                <Border CornerRadius="{Binding CornerRadius}"
-                        Background="{Binding Background}"
-                        Padding="{Binding RowPadding}"
-                        Margin="{Binding RowMargin}"
-                        HorizontalAlignment="{Binding RowAlignment}">
-                    <TextBlock Text="{Binding DisplayText}"
-                               FontFamily="Segoe UI" FontWeight="SemiBold"
-                               FontSize="{Binding FontSize}"
-                               Foreground="{Binding Foreground}"
-                               TextWrapping="Wrap"
-                               MaxWidth="{Binding MaxTextWidth}"/>
-                </Border>
-            </DataTemplate>
-        </ItemsControl.ItemTemplate>
-    </ItemsControl>
+    <!-- 行は OverlayRowControl として動的に追加される。3 スタイルの中身は RowContentFactory -->
+    <Grid>
+        <StackPanel x:Name="RowsPanel" Margin="16" VerticalAlignment="Bottom"/>
+    </Grid>
 </Window>

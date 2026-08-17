@@ -772,6 +772,19 @@ public sealed class KeyStateMachine
         {
             _heldModifierVks.Remove(vk);
         }
+        // 逆に、フックが down を取りこぼした修飾キーは実状態から拾い直す
+        // (VM のキーボード仮想化などで単独押しの down が遅延・欠落することがある)。
+        // 表示中なら flagsChanged 相当を起こして修飾キー単独行を出す
+        foreach (var vk in KeyFormatter.ModifierVks)
+        {
+            if (_probe.IsKeyDown(vk)) _heldModifierVks.Add(vk);
+        }
+        var adopted = ComputeFlags();
+        if (adopted != _currentModifiers &&
+            _settings.OverlayVisible && !_settings.HotCornerSuppressed)
+        {
+            HandleFlagsChanged(adopted);
+        }
         var realFlags = _probe.RealModifiers;
         if (_pressedKeys.Count == 0 && realFlags == ModifierKeys.None &&
             _mouseEntryId is null && _currentId is Guid id)

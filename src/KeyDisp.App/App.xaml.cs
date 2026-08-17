@@ -61,7 +61,7 @@ public partial class App : Application
         _model = new KeyDisplayModel(_settings, scheduler);
         _machine = new KeyStateMachine(_model, _settings, formatter, scheduler, _probe, metrics);
 
-        _overlay = new OverlayWindow(_model, _settings);
+        _overlay = new OverlayWindow(_model, _settings, metrics, formatter);
 
         _messageWindow = new MessageWindow();
         _tray = new TrayIcon(_messageWindow, "KeyDisp", BuildTrayMenu);

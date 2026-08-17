@@ -162,6 +162,12 @@ public sealed class KeyFormatter
 
     public static bool IsModifierVk(int vk) => ModifierOf(vk) != ModifierKeys.None;
 
+    /// <summary>修飾キーの L/R 個別 VK の一覧 (reconcile での実状態照会用)。</summary>
+    public static readonly IReadOnlyList<int> ModifierVks = new[]
+    {
+        Vk.LShift, Vk.RShift, Vk.LControl, Vk.RControl, Vk.LMenu, Vk.RMenu, Vk.LWin, Vk.RWin,
+    };
+
     // ── キーの分類 ────────────────────────────────────────
 
     public static bool IsArrowKey(int vk) => vk is >= Vk.Left and <= Vk.Down;
