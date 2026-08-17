@@ -77,6 +77,7 @@ public sealed class SettingsDocument
     public bool? LaunchAtLogin { get; set; }
     public int? HotKeyVk { get; set; }
     public int? HotKeyModifiers { get; set; }
+    public bool? PrivacyNoticeShown { get; set; }
 
     /// <summary>オーバーレイの現在フレーム [x, y, width, height] (物理 px)。</summary>
     public double[]? OverlayFrame { get; set; }
@@ -147,6 +148,7 @@ public sealed class SettingsDocument
         s.LaunchAtLogin = LaunchAtLogin ?? s.LaunchAtLogin;
         s.HotKeyVk = HotKeyVk ?? s.HotKeyVk;
         s.HotKeyModifiers = HotKeyModifiers ?? s.HotKeyModifiers;
+        s.PrivacyNoticeShown = PrivacyNoticeShown ?? s.PrivacyNoticeShown;
     }
 
     /// <summary>現在の設定からドキュメントを作る (displayProfiles は呼び出し側が別途保持)。</summary>
@@ -197,5 +199,6 @@ public sealed class SettingsDocument
         LaunchAtLogin = s.LaunchAtLogin,
         HotKeyVk = s.HotKeyVk,
         HotKeyModifiers = s.HotKeyModifiers,
+        PrivacyNoticeShown = s.PrivacyNoticeShown,
     };
 }

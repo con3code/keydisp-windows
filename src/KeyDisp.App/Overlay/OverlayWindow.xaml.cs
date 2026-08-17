@@ -68,6 +68,8 @@ public partial class OverlayWindow : Window
     private int _lastEntryCount;
     private bool _dragging;
     private string? _dragStartScreenId;
+    /// <summary>dragToMove 用: カーソルが見えている行の上にあるか。</summary>
+    private bool _hoverOverRow;
     /// <summary>編集モードのサンプル行 (表記設定が変わったら作り直す)。</summary>
     private List<KeyEntry>? _samples;
     private string _samplesKey = "";
@@ -137,10 +139,54 @@ public partial class OverlayWindow : Window
         if (_hwnd == IntPtr.Zero) return;
         var ex = GetWindowLongPtr(_hwnd, GWL_EXSTYLE).ToInt64();
         ex |= WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW;
-        // 編集モード中はマウスを受け付ける (移動・リサイズのため)
-        if (_settings.EditMode) ex &= ~WS_EX_TRANSPARENT;
+        // 編集モード中は全域、dragToMove では行の上にいる間だけマウスを受け付ける
+        if (_settings.EditMode || _hoverOverRow) ex &= ~WS_EX_TRANSPARENT;
         else ex |= WS_EX_TRANSPARENT;
         SetWindowLongPtr(_hwnd, GWL_EXSTYLE, new IntPtr(ex));
+    }
+
+    /// <summary>
+    /// dragToMove 用: カーソル位置 (物理 px) が見えている行の上にあるかでマウス受付を切り替える。
+    /// レイヤードウィンドウでは「透明ピクセルはクリック透過」という OS の挙動が効かないため、
+    /// 行の矩形を実測して判定する (Mac 版 refreshMouseAcceptance と同じ構造)。
+    /// フックのマウス移動イベントから呼ばれる。
+    /// </summary>
+    public void UpdateRowHover(int x, int y)
+    {
+        if (!_settings.DragToMove || _settings.EditMode || !IsVisible || _dragging) return;
+        var over = CursorIsOverRow(x, y);
+        if (over != _hoverOverRow)
+        {
+            _hoverOverRow = over;
+            ApplyClickThrough();
+        }
+    }
+
+    private bool CursorIsOverRow(double x, double y)
+    {
+        var frame = CurrentFrame();
+        if (!frame.Contains(x, y)) return false;
+        var margin = 8 * DpiScale;
+        foreach (var child in RowsPanel.Children)
+        {
+            if (child is not OverlayRowControl control || control.ActualWidth <= 0) continue;
+            Point topLeft, bottomRight;
+            try
+            {
+                topLeft = control.PointToScreen(new Point(0, 0)); // 物理 px
+                bottomRight = control.PointToScreen(new Point(control.ActualWidth, control.ActualHeight));
+            }
+            catch (InvalidOperationException)
+            {
+                continue; // まだビジュアルツリーに載っていない
+            }
+            if (x >= topLeft.X - margin && x <= bottomRight.X + margin &&
+                y >= topLeft.Y - margin && y <= bottomRight.Y + margin)
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void RestoreFrame()
@@ -211,6 +257,14 @@ public partial class OverlayWindow : Window
                 var y = (short)((lParam.ToInt64() >> 16) & 0xFFFF);
                 handled = true;
                 return new IntPtr(HitTest(x, y));
+            }
+            case WM_NCHITTEST when _settings.DragToMove && _hoverOverRow:
+            {
+                // 行を掴んだらウィンドウごと移動、行の外は下のアプリへ素通し
+                var x = (short)(lParam.ToInt64() & 0xFFFF);
+                var y = (short)((lParam.ToInt64() >> 16) & 0xFFFF);
+                handled = true;
+                return new IntPtr(CursorIsOverRow(x, y) ? HTCAPTION : HTTRANSPARENT);
             }
             case WM_NCLBUTTONDOWN when _settings.EditMode:
             {
@@ -510,6 +564,12 @@ public partial class OverlayWindow : Window
         if (name == nameof(AppSettings.EditMode))
         {
             RefreshEditMode();
+            return;
+        }
+        if (name == nameof(AppSettings.DragToMove))
+        {
+            _hoverOverRow = false;
+            ApplyClickThrough();
             return;
         }
         if (GrowProperties.Contains(name)) GrowToFitContent();

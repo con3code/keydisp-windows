@@ -37,6 +37,11 @@ public partial class App : Application
     private ScreenService _screens = null!;
     private ScreenProfileStore? _profileStore;
     private EditHudWindow? _editHud;
+    private SettingsWindow? _settingsWindow;
+    private MouseHighlightWindow? _mouseHighlight;
+    private BigCursorWindow? _bigCursor;
+    private HotEdgeWatcher? _hotEdge;
+    private readonly StartupManager _startup = new();
     private DispatcherTimer? _reconcileTimer;
     /// <summary>リピート合成用: 消費側から見た押下中キー (フックに autorepeat フラグが無いため)。</summary>
     private readonly HashSet<int> _consumerPressed = new();
@@ -58,6 +63,8 @@ public partial class App : Application
         Services.Localization.Configure(_settings);
         _repository = new SettingsRepository(_settings);
         _repository.Load();
+        // 自動起動の実状態 (レジストリ) と同期してから監視を始める
+        _settings.LaunchAtLogin = _startup.IsEnabled();
         _repository.Attach();
 
         var scheduler = new DispatcherDelayScheduler();
@@ -77,9 +84,35 @@ public partial class App : Application
         // 表示前にフレーム復元と WndProc フックを済ませるため、ハンドルを先に作る
         new WindowInteropHelper(_overlay).EnsureHandle();
 
+        _mouseHighlight = new MouseHighlightWindow(_settings);
+        _bigCursor = new BigCursorWindow(_settings);
+        _hotEdge = new HotEdgeWatcher(_settings, _model, _screens);
+
         _settings.PropertyChanged += (_, e) =>
         {
-            if (e.PropertyName == nameof(AppSettings.EditMode)) OnEditModeChanged();
+            switch (e.PropertyName)
+            {
+                case nameof(AppSettings.EditMode):
+                    OnEditModeChanged();
+                    break;
+                case nameof(AppSettings.LaunchAtLogin):
+                    _startup.SetEnabled(_settings.LaunchAtLogin);
+                    break;
+                case nameof(AppSettings.HotKeyVk):
+                case nameof(AppSettings.HotKeyModifiers):
+                    _hotKey?.Register(_settings.HotKeyModifiers, _settings.HotKeyVk);
+                    break;
+                case nameof(AppSettings.BigCursor):
+                case nameof(AppSettings.MouseHighlight):
+                case nameof(AppSettings.DragToMove):
+                    UpdateMouseMoveForwarding();
+                    if (e.PropertyName == nameof(AppSettings.BigCursor) && _settings.BigCursor)
+                    {
+                        var (cx, cy) = _screens.CursorPosition();
+                        _bigCursor?.OnMove((int)cx, (int)cy);
+                    }
+                    break;
+            }
         };
 
         _messageWindow = new MessageWindow();
@@ -89,8 +122,21 @@ public partial class App : Application
         _hotKey.Register(_settings.HotKeyModifiers, _settings.HotKeyVk);
 
         _hook = new LowLevelHookHost();
+        UpdateMouseMoveForwarding();
         _hook.Start();
         _ = ConsumeInputAsync();
+
+        // 初回起動時のプライバシー説明 (Windows にはセキュア入力保護が無いため)
+        if (!_settings.PrivacyNoticeShown)
+        {
+            MessageBox.Show(
+                L("KeyDisp は押したキーとマウス操作を画面に表示します。入力の記録や送信は一切行いません。\n\n" +
+                  "ご注意: Windows にはパスワード入力欄を保護する仕組みがないため、「すべてのキー入力を表示」をオンにしている間はパスワードも画面に表示され得ます。人に画面を見せる前に、ショートカット (既定 Alt+Win+K) で表示を切り替えてください。",
+                  "KeyDisp shows the keys and mouse actions you press on screen. Nothing is ever logged or transmitted.\n\n" +
+                  "Note: Windows offers no secure-input protection, so while \"Show all keystrokes\" is enabled, passwords may also appear on screen. Use the toggle shortcut (default Alt+Win+K) before typing sensitive text."),
+                "KeyDisp", MessageBoxButton.OK, MessageBoxImage.Information);
+            _settings.PrivacyNoticeShown = true;
+        }
 
         // 定期 reconcile (取り残し回収)。イベント処理側と同じ 1 秒周期
         _reconcileTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
@@ -100,6 +146,13 @@ public partial class App : Application
             _consumerPressed.RemoveWhere(vk => !_probe.IsKeyDown(vk));
         };
         _reconcileTimer.Start();
+    }
+
+    /// <summary>マウス移動の転送は、必要とする機能がオンのときだけ有効にする (負荷対策)。</summary>
+    private void UpdateMouseMoveForwarding()
+    {
+        _hook.ForwardMouseMoves =
+            _settings.BigCursor || _settings.MouseHighlight || _settings.DragToMove;
     }
 
     /// <summary>フックからのイベントを UI スレッドで消費し、状態機械へ流す。</summary>
@@ -117,7 +170,14 @@ public partial class App : Application
                     _machine.HandleKey(ev.Vk, ev.IsDown, isRepeat);
                     break;
                 case RawInputKind.MouseButton:
+                    // マウスハイライトへの転送はキー表示の表示/非表示と独立 (Mac 版と同じ)
+                    _mouseHighlight?.OnButton(ev.Button, ev.IsDown, ev.X, ev.Y);
                     _machine.HandleMouseButton(ev.Button, ev.IsDown);
+                    break;
+                case RawInputKind.MouseMove:
+                    _mouseHighlight?.OnMove(ev.X, ev.Y);
+                    _bigCursor?.OnMove(ev.X, ev.Y);
+                    _overlay?.UpdateRowHover(ev.X, ev.Y);
                     break;
             }
         }
@@ -130,7 +190,15 @@ public partial class App : Application
         {
             // メニューを操作した画面のプロファイルが編集対象になるよう、先に移す
             if (_settings.FollowCursorScreen) _overlay?.MoveToCursorScreen();
-            _editHud ??= new EditHudWindow(_settings, _screens);
+            if (_editHud is null)
+            {
+                _editHud = new EditHudWindow(_settings, _screens)
+                {
+                    // オーバーレイの所有ウィンドウにすると、破線枠をクリック/ドラッグして
+                    // オーバーレイが最前面へ上がっても HUD は常にその上に保たれる
+                    Owner = _overlay,
+                };
+            }
             _editHud.ShowOnCursorScreen();
         }
         else
@@ -151,10 +219,18 @@ public partial class App : Application
         new TrayMenuItem(L("すべてのキー入力を表示", "Show All Keystrokes"), _settings.ShowAllKeys,
             () => _settings.ShowAllKeys = !_settings.ShowAllKeys),
         TrayMenuItem.Separator,
+        new TrayMenuItem(L("設定…", "Settings…"), false, OpenSettings),
         new TrayMenuItem(L("設定フォルダを開く", "Open Settings Folder"), false, OpenSettingsFolder),
         TrayMenuItem.Separator,
         new TrayMenuItem(L("KeyDisp を終了", "Quit KeyDisp"), false, Shutdown),
     };
+
+    private void OpenSettings()
+    {
+        _settingsWindow ??= new SettingsWindow(_settings);
+        _settingsWindow.Show();
+        _settingsWindow.Activate();
+    }
 
     private void OpenSettingsFolder()
     {
@@ -172,6 +248,7 @@ public partial class App : Application
         _tray?.Dispose();
         _messageWindow?.Dispose();
         _profileStore?.Dispose();
+        _hotEdge?.Dispose();
         _repository?.Dispose(); // 保留中の設定変更を確定保存
         _singleInstanceMutex?.ReleaseMutex();
         _singleInstanceMutex?.Dispose();

@@ -206,6 +206,13 @@ public sealed class AppSettings : INotifyPropertyChanged
     private int _hotKeyModifiers = 0x0001 | 0x0008;
     public int HotKeyModifiers { get => _hotKeyModifiers; set => Set(ref _hotKeyModifiers, value); }
 
+    /// <summary>
+    /// 初回起動時のプライバシー説明を表示済みか (Windows 固有。
+    /// Windows にはセキュア入力保護が無いため、初回に説明ダイアログを出す)。
+    /// </summary>
+    private bool _privacyNoticeShown;
+    public bool PrivacyNoticeShown { get => _privacyNoticeShown; set => Set(ref _privacyNoticeShown, value); }
+
     // ── 実行時のみ (非永続) ────────────────────────────────
 
     private bool _editMode;
