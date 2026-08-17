@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- OS 非依存の純粋ロジック層。WPF / Win32 への参照を持たないこと。
+       net8.0 (プレーン) を保つことで macOS 上の dotnet test がそのまま動く -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>KeyDisp.Core</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="KeyDisp.Core.Tests" />
+  </ItemGroup>
+
+</Project>

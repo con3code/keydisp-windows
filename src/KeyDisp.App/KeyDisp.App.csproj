@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>KeyDisp.App</RootNamespace>
+    <AssemblyName>KeyDisp</AssemblyName>
+    <!-- 配布は self-contained 単一 exe。発行時のみ有効になる設定は CI の publish 引数で渡す -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\KeyDisp.Core\KeyDisp.Core.csproj" />
+  </ItemGroup>
+
+</Project>

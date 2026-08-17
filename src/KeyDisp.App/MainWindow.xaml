@@ -1,0 +1,10 @@
+<Window x:Class="KeyDisp.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="KeyDisp" Width="420" Height="220">
+    <!-- Phase 0 の開発用シェル。トレイ常駐とオーバーレイの実装で置き換わる -->
+    <Grid>
+        <TextBlock Text="KeyDisp for Windows — development shell"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+    </Grid>
+</Window>
