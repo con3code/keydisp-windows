@@ -145,6 +145,22 @@ Mac 版キーを踏襲: overlayVisible, displayScale(0.5-5), holdDuration(0-5), 
 - 廃止: showMenuBarIcon/showDockIcon (トレイ常時表示), customImageBookmark, showOptionSymbols
 - 書き込み: 500ms デバウンス + 一時ファイル→アトミック置換
 
+## 9.5 既知の課題: かな・IME まわりの見直し (VM 検証で判明、要再設計)
+
+Mac と Windows で日本語入力の切り替え方・キー割り当てが根本的に違うため、
+「キー表記」のかな関連は Mac 版の直訳では機能しない。個別課題:
+
+1. **kanaDisplay が発動しない**: `ImmGetOpenStatus` (WM_IME_CONTROL) による IME オン判定が
+   VM 環境で機能しなかった。TSF ベースのアプリや新 MS-IME で IMM32 互換が効かない
+   ケースの調査が必要。判定手段の再検討 (TSF API / 半角全角キーの状態追跡など)
+2. **切替キーの表記設計**: Mac は 英数/かな キーでモード切替だが、Windows は
+   半角/全角 トグルが主で、無変換/変換 の役割も IME 設定 (新旧 MS-IME、ATOK、
+   Google 日本語入力) やユーザー設定で異なる。「英数/かな → 無変換/変換」という
+   Mac 版由来のショートカット互換対応表が実キーの役割と一致しない場合があるため、
+   IME 切替キーの表示は割り当てを考慮した再設計が必要
+3. **かな入力ユーザーの実地検証**: JIS かな配列表 (JisKanaTable) は机上移植のため、
+   かな入力の実利用での確認が必要 (checklist D 項)
+
 ## 10. 既定値の非互換メモ (Mac 版との意図的差分)
 
 | 項目 | Mac | Windows | 理由 |

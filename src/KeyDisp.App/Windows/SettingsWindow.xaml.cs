@@ -207,6 +207,11 @@ public partial class SettingsWindow : Window
         return name;
     }
 
+    // ── カラーピッカー ────────────────────────────────────
+
+    private void OnSwatchClicked(object sender, System.Windows.Input.MouseButtonEventArgs e) =>
+        ColorPickerHelper.HandleSwatchClick(sender, e, _settings);
+
     // ── 背景画像の選択 ────────────────────────────────────
 
     private void OnBrowseImage(object sender, RoutedEventArgs e)

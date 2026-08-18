@@ -33,6 +33,8 @@ public sealed class KeyboardLayoutProvider : IKeyboardLayout
 
     public bool IsJapaneseInputMode()
     {
+        // HKL の下位ワードは言語 ID。日本語レイアウト (0x0411) 以外なら IME 判定するまでもない
+        if ((CurrentLayout().ToInt64() & 0x3FF) != 0x11) return false;
         var foreground = GetForegroundWindow();
         if (foreground == IntPtr.Zero) return false;
         var imeWnd = ImmGetDefaultIMEWnd(foreground);

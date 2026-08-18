@@ -70,7 +70,6 @@
                     <ComboBox x:Name="ArrowGroupCombo" FontSize="12"
                               SelectedIndex="{Binding ArrowGrouping, Converter={StaticResource EnumToInt}}"/>
                 </DockPanel>
-                <CheckBox x:Name="KeyClickComboCheck" IsChecked="{Binding ShowKeyClickCombo}"/>
             </StackPanel>
         </TabItem>
         <!-- デザイン -->
@@ -103,6 +102,7 @@
                 <DockPanel>
                     <TextBlock x:Name="TextColorLabel" Style="{StaticResource RowLabel}"/>
                     <Border Width="18" Height="18" Margin="0,0,4,0" BorderBrush="Gray" BorderThickness="1"
+                            Cursor="Hand" Tag="TextColorHex" MouseLeftButtonDown="OnSwatchClicked"
                             Background="{Binding TextColorHex, Converter={StaticResource HexToBrush}}"/>
                     <TextBox FontSize="12" VerticalAlignment="Center"
                              Text="{Binding TextColorHex, UpdateSourceTrigger=PropertyChanged}"/>
@@ -111,6 +111,7 @@
                 <DockPanel>
                     <TextBlock x:Name="OutlineColorLabel" Style="{StaticResource RowLabel}"/>
                     <Border Width="18" Height="18" Margin="0,0,4,0" BorderBrush="Gray" BorderThickness="1"
+                            Cursor="Hand" Tag="TextOutlineColorHex" MouseLeftButtonDown="OnSwatchClicked"
                             Background="{Binding TextOutlineColorHex, Converter={StaticResource HexToBrush}}"/>
                     <TextBox FontSize="12" VerticalAlignment="Center"
                              IsEnabled="{Binding TextOutline}"
@@ -119,6 +120,7 @@
                 <DockPanel>
                     <TextBlock x:Name="KeyColorLabel" Style="{StaticResource RowLabel}"/>
                     <Border Width="18" Height="18" Margin="0,0,4,0" BorderBrush="Gray" BorderThickness="1"
+                            Cursor="Hand" Tag="KeyColorHex" MouseLeftButtonDown="OnSwatchClicked"
                             Background="{Binding KeyColorHex, Converter={StaticResource HexToBrush}}"/>
                     <TextBox FontSize="12" VerticalAlignment="Center"
                              Text="{Binding KeyColorHex, UpdateSourceTrigger=PropertyChanged}"/>
@@ -142,11 +144,13 @@
         <TabItem x:Name="MouseTab">
             <StackPanel Margin="12">
                 <CheckBox x:Name="ClickInDisplayCheck" IsChecked="{Binding ShowClickInKeyDisplay}"/>
+                <CheckBox x:Name="KeyClickComboCheck" IsChecked="{Binding ShowKeyClickCombo}"/>
                 <Separator Margin="0,4,0,8"/>
                 <CheckBox x:Name="HighlightCheck" IsChecked="{Binding MouseHighlight}"/>
                 <DockPanel>
                     <TextBlock x:Name="HighlightColorLabel" Style="{StaticResource RowLabel}"/>
                     <Border Width="18" Height="18" Margin="0,0,4,0" BorderBrush="Gray" BorderThickness="1"
+                            Cursor="Hand" Tag="MouseColorHex" MouseLeftButtonDown="OnSwatchClicked"
                             Background="{Binding MouseColorHex, Converter={StaticResource HexToBrush}}"/>
                     <TextBox FontSize="12" VerticalAlignment="Center"
                              Text="{Binding MouseColorHex, UpdateSourceTrigger=PropertyChanged}"/>
@@ -164,6 +168,7 @@
                 <DockPanel>
                     <TextBlock x:Name="BigCursorColorLabel" Style="{StaticResource RowLabel}"/>
                     <Border Width="18" Height="18" Margin="0,0,4,0" BorderBrush="Gray" BorderThickness="1"
+                            Cursor="Hand" Tag="BigCursorColorHex" MouseLeftButtonDown="OnSwatchClicked"
                             Background="{Binding BigCursorColorHex, Converter={StaticResource HexToBrush}}"/>
                     <TextBox FontSize="12" VerticalAlignment="Center"
                              Text="{Binding BigCursorColorHex, UpdateSourceTrigger=PropertyChanged}"/>

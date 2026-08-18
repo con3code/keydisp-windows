@@ -85,6 +85,9 @@ public partial class EditHudWindow : Window
 
     private void OnDone(object sender, RoutedEventArgs e) => _settings.EditMode = false;
 
+    private void OnSwatchClicked(object sender, System.Windows.Input.MouseButtonEventArgs e) =>
+        ColorPickerHelper.HandleSwatchClick(sender, e, _settings);
+
     /// <summary>閉じるボタン = 編集モード終了 (ウィンドウ自体は使い回す)。</summary>
     private void OnClosing(object? sender, CancelEventArgs e)
     {
