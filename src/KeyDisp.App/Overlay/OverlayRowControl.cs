@@ -17,6 +17,7 @@ public sealed class OverlayRowControl : ContentControl
     private readonly ScaleTransform _pulse = new(1, 1);
     private readonly TranslateTransform _slide = new();
     private int _lastCount = 1;
+    private int _lastTokenCount;
     private KeyEntryPhase _lastPhase = KeyEntryPhase.Active;
     private long _lastPulseMs;
 
@@ -38,8 +39,12 @@ public sealed class OverlayRowControl : ContentControl
         AppSettings settings, KeyFormatter formatter, double maxWidth)
     {
         var scale = settings.DisplayScale;
+        // タイピング連結で文字が増えた更新なら、末尾のキーの出現をアニメーションする
+        var appended = settings.TypingAnimation && entry.IsTyping &&
+            _lastTokenCount > 0 && tokens.Count > _lastTokenCount;
+        _lastTokenCount = tokens.Count;
         Content = RowContentFactory.Build(
-            tokens, entry.IsTyping, entry.Count, settings, formatter, maxWidth);
+            tokens, entry.IsTyping, entry.Count, settings, formatter, maxWidth, appended);
         MaxWidth = maxWidth;
         Margin = new Thickness(0, OverlayConstants.RowSpacing * scale / 2,
             0, OverlayConstants.RowSpacing * scale / 2);

@@ -20,13 +20,19 @@ internal static class RowContentFactory
         _ => ("\U0001F5B1︎", null),
     };
 
+    /// <param name="animateAppend">
+    /// タイピング連結で文字が増えた更新か (typingAnimation オン時のみ)。
+    /// キーキャップでは末尾のキーが spring で現れる。連結テキストの 2 スタイルは
+    /// 文字がその場に現れる表現のため対象外 (Mac 版でも効果は控えめ)。
+    /// </param>
     public static UIElement Build(
         IReadOnlyList<string> tokens, bool isTyping, int count,
-        AppSettings settings, KeyFormatter formatter, double maxWidth)
+        AppSettings settings, KeyFormatter formatter, double maxWidth,
+        bool animateAppend = false)
     {
         return settings.KeyStyle switch
         {
-            KeyStyle.Keycap => BuildKeycapRow(tokens, isTyping, count, settings, formatter),
+            KeyStyle.Keycap => BuildKeycapRow(tokens, isTyping, count, settings, formatter, animateAppend),
             KeyStyle.CustomImage => BuildTextRow(tokens, isTyping, count, settings, formatter, maxWidth,
                 custom: true),
             _ => BuildTextRow(tokens, isTyping, count, settings, formatter, maxWidth, custom: false),
@@ -160,7 +166,7 @@ internal static class RowContentFactory
 
     private static UIElement BuildKeycapRow(
         IReadOnlyList<string> tokens, bool isTyping, int count,
-        AppSettings settings, KeyFormatter formatter)
+        AppSettings settings, KeyFormatter formatter, bool animateAppend)
     {
         var scale = settings.DisplayScale;
         var showPlus = settings.PlusSeparator && !isTyping;
@@ -193,7 +199,35 @@ internal static class RowContentFactory
                 Foreground = textBrush,
             });
         }
+        // タイピング連結で増えた末尾のキーを spring で出現させる
+        // (Mac 版の entry.tokens への spring アニメーションに相当)
+        if (animateAppend && panel.Children.Count > 0 &&
+            panel.Children[panel.Children.Count - 1] is FrameworkElement appended)
+        {
+            AnimateKeycapEntrance(appended);
+        }
         return panel;
+    }
+
+    private static void AnimateKeycapEntrance(FrameworkElement element)
+    {
+        element.RenderTransformOrigin = new Point(0.5, 0.8);
+        var scale = new System.Windows.Media.ScaleTransform(0.4, 0.4);
+        element.RenderTransform = scale;
+        var spring = new SpringEase
+        {
+            Response = OverlayConstants.InsertSpringResponse,
+            DampingFraction = OverlayConstants.InsertSpringDamping,
+        };
+        var grow = new System.Windows.Media.Animation.DoubleAnimation(
+            0.4, 1.0, SpringEase.DurationFor(OverlayConstants.InsertSpringResponse))
+        {
+            EasingFunction = spring,
+        };
+        scale.BeginAnimation(System.Windows.Media.ScaleTransform.ScaleXProperty, grow);
+        scale.BeginAnimation(System.Windows.Media.ScaleTransform.ScaleYProperty, grow.Clone());
+        element.BeginAnimation(UIElement.OpacityProperty,
+            new System.Windows.Media.Animation.DoubleAnimation(0, 1, TimeSpan.FromSeconds(0.12)));
     }
 
     private static UIElement BuildKeycap(string token, AppSettings settings, KeyFormatter formatter)
