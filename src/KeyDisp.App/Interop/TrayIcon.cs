@@ -22,13 +22,16 @@ public sealed class TrayIcon : IDisposable
     private readonly MessageWindow _window;
     private readonly Func<IReadOnlyList<TrayMenuItem>> _menuProvider;
     private readonly uint _taskbarCreatedMessage;
+    private readonly IntPtr _hIcon;
     private bool _added;
 
-    public TrayIcon(MessageWindow window, string tooltip, Func<IReadOnlyList<TrayMenuItem>> menuProvider)
+    public TrayIcon(MessageWindow window, string tooltip,
+        Func<IReadOnlyList<TrayMenuItem>> menuProvider, IntPtr hIcon = default)
     {
         _window = window;
         _menuProvider = menuProvider;
         Tooltip = tooltip;
+        _hIcon = hIcon;
         _taskbarCreatedMessage = RegisterWindowMessageW("TaskbarCreated");
         _window.AddHook(WndProc);
         Add();
@@ -43,8 +46,7 @@ public sealed class TrayIcon : IDisposable
         uID = IconId,
         uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP,
         uCallbackMessage = CallbackMessage,
-        // 仮アイコン (標準アプリアイコン)。ブランドアイコンは配布仕上げで差し替え
-        hIcon = LoadIconW(IntPtr.Zero, IDI_APPLICATION),
+        hIcon = _hIcon != IntPtr.Zero ? _hIcon : LoadIconW(IntPtr.Zero, IDI_APPLICATION),
         szTip = Tooltip,
         szInfo = "",
         szInfoTitle = "",

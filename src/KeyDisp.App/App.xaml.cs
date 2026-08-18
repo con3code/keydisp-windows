@@ -42,6 +42,7 @@ public partial class App : Application
     private BigCursorWindow? _bigCursor;
     private HotEdgeWatcher? _hotEdge;
     private readonly StartupManager _startup = new();
+    private System.Drawing.Icon? _trayIconImage;
     private DispatcherTimer? _reconcileTimer;
     /// <summary>リピート合成用: 消費側から見た押下中キー (フックに autorepeat フラグが無いため)。</summary>
     private readonly HashSet<int> _consumerPressed = new();
@@ -116,7 +117,7 @@ public partial class App : Application
         };
 
         _messageWindow = new MessageWindow();
-        _tray = new TrayIcon(_messageWindow, "KeyDisp", BuildTrayMenu);
+        _tray = new TrayIcon(_messageWindow, "KeyDisp", BuildTrayMenu, LoadTrayIcon());
         _hotKey = new HotKeyManager(_messageWindow);
         _hotKey.Pressed += () => _settings.OverlayVisible = !_settings.OverlayVisible;
         _hotKey.Register(_settings.HotKeyModifiers, _settings.HotKeyVk);
@@ -224,6 +225,25 @@ public partial class App : Application
         TrayMenuItem.Separator,
         new TrayMenuItem(L("KeyDisp を終了", "Quit KeyDisp"), false, Shutdown),
     };
+
+    /// <summary>ブランドアイコンをリソースから読む (失敗時は IntPtr.Zero → 標準アイコン)。</summary>
+    private IntPtr LoadTrayIcon()
+    {
+        try
+        {
+            var resource = GetResourceStream(new Uri("pack://application:,,,/Assets/app.ico"));
+            if (resource is null) return IntPtr.Zero;
+            using var stream = resource.Stream;
+            // トレイに合うサイズ (16px 系) のフレームを選ばせる。Icon は Handle の寿命のため保持
+            _trayIconImage = new System.Drawing.Icon(stream,
+                System.Windows.Forms.SystemInformation.SmallIconSize);
+            return _trayIconImage.Handle;
+        }
+        catch (Exception)
+        {
+            return IntPtr.Zero;
+        }
+    }
 
     private void OpenSettings()
     {

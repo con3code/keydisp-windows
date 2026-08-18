@@ -9,11 +9,17 @@
     <RootNamespace>KeyDisp.App</RootNamespace>
     <AssemblyName>KeyDisp</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
     <!-- 配布は self-contained 単一 exe。発行時のみ有効になる設定は CI の publish 引数で渡す -->
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\KeyDisp.Core\KeyDisp.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- トレイアイコンが実行時に読むためのリソース (exe アイコンとは別経路) -->
+    <Resource Include="Assets\app.ico" />
   </ItemGroup>
 
   <!-- UseWindowsForms が足す暗黙 global using は WPF の型と衝突するため外す
