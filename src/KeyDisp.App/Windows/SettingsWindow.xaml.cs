@@ -59,7 +59,9 @@ public partial class SettingsWindow : Window
         ShowAllCheck.Content = L("すべてのキー入力を表示", "Show all keystrokes");
         CountRepeatsCheck.Content = L("同じキーの連続入力を ×n でまとめる", "Merge repeats as ×n");
         DistinguishCaseCheck.Content = L("英字の大文字と小文字を区別して表示", "Distinguish letter case");
-        KanaCheck.Content = L("かな入力 (JIS かな配列) で表示", "Show as JIS kana layout");
+        // かな/IME まわりは移植途中 (docs/SPEC.md §9.5)。UI 上も開発中と明示する
+        var wip = L("（開発中）", " (in development)");
+        KanaCheck.Content = L("かな入力 (JIS かな配列) で表示", "Show as JIS kana layout") + wip;
         LabelStyleLabel.Text = L("表記スタイル", "Label Style");
         LabelStyleCombo.ItemsSource = new[]
         {
@@ -67,8 +69,8 @@ public partial class SettingsWindow : Window
             L("Mac 記号", "Mac symbols"),
             L("併記 (Ctrl/⌘)", "Both (Ctrl/⌘)"),
         };
-        JisABCCheck.Content = L("英数/かな を ABC/あいう と表示", "Show 英数/かな as ABC/あいう");
-        GlobeCheck.Content = L("入力切替キーに 🌐 を付ける", "Add 🌐 to IME switch keys");
+        JisABCCheck.Content = L("英数/かな を ABC/あいう と表示", "Show 英数/かな as ABC/あいう") + wip;
+        GlobeCheck.Content = L("入力切替キーに 🌐 を付ける", "Add 🌐 to IME switch keys") + wip;
         PlusSeparatorCheck.Content = L("キーの間に + を表示", "Separate keys with +");
         PressOrderCheck.Content = L("修飾キーを押した順に並べる", "Order modifiers by press sequence");
         ArrowGroupLabel.Text = L("矢印キー", "Arrow Keys");
